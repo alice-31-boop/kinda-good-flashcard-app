@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rin Flash!</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: #1e1e2f;
+      color: #ffffff;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      background: #2a2a40;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      width: 100%;
+      max-width: 800px;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #ffffff;
+      font-size: 2.5rem;
+      text-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+    textarea, input, select {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      font-size: 16px;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    textarea:focus, input:focus, select:focus {
+      border-color: #9d4cff;
+      box-shadow: 0 0 8px rgba(157, 76, 255, 0.5);
+    }
+    button {
+      padding: 12px 24px;
+      background-color: #9d4cff;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #7c3cf0;
+      transform: scale(1.05);
+    }
+    .flashcard-container {
+      perspective: 1000px;
+      margin-bottom: 16px;
+    }
+    .flashcard {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 12px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.4s, box-shadow 0.4s;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    .flashcard:hover {
+      box-shadow: 0 8px 24px rgba(157, 76, 255, 0.5);
+    }
+    .flashcard.flipped {
+      transform: rotateY(180deg);
+    }
+    .flashcard .front, .flashcard .back {
+      backface-visibility: hidden;
+      position: absolute;
+      width: calc(100% - 40px);
+      height: calc(100% - 40px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 1.2rem;
+    }
+    .flashcard .back {
+      transform: rotateY(180deg);
+    }
+    .revision-page {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #1e1e2f;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .revision-page .flashcard {
+      width: 80%;
+      max-width: 500px;
+      height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+    .revision-page .flashcard.flipped {
+      transform: rotateY(180deg);
+    }
+    .revision-page .flashcard .front, .revision-page .flashcard .back {
+      width: 100%;
+      height: 100%;
+    }
+    .revision-page .controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    .revision-page .controls button {
+      background-color: #9d4cff;
+      color: #ffffff;
+    }
+    .revision-page .controls button:hover {
+      background-color: #7c3cf0;
+    }
+    .revision-page .controls button.exit {
+      background-color: #ff4d4d;
+      color: #ffffff;
+    }
+    .revision-page .controls button.exit:hover {
+      background-color: #ff3333;
+    }
+    .audio-preview {
+      margin-top: 10px;
+    }
+    .audio-preview audio {
+      width: 100%;
+    }
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .record-audio {
+      margin-top: 10px;
+    }
+    .record-audio button {
+      background-color: #00bfff;
+      color: #ffffff;
+    }
+    .record-audio button:hover {
+      background-color: #0099cc;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Ultimate Flashcard</h1>
+    <textarea id="question" placeholder="Enter word or phrase..."></textarea>
+    <textarea id="answer" placeholder="Enter translation..."></textarea>
+    <div class="record-audio">
+      <button id="record-button" onclick="toggleRecording()">🎤 Start Recording</button>
+      <audio id="audio-preview" controls style="display: none; margin-top: 10px;"></audio>
+    </div>
+    <div class="button-group">
+      <button onclick="addFlashcard()">Add Flashcard</button>
+      <button onclick="startRevision()">Start Revision</button>
+    </div>
+    <hr>
+    <h2>Your Flashcards</h2>
+    <div id="flashcards"></div>
+  </div>
+
+  <div id="revision-page" class="revision-page" style="display: none;">
+    <div id="revision-flashcard" class="flashcard" onclick="flipCard(this)">
+      <div class="front"></div>
+      <div class="back"></div>
+    </div>
+    <div id="revision-audio" class="audio-preview"></div>
+    <div class="controls">
+      <button onclick="showNextCard()">Next Card</button>
+      <button onclick="editCurrentCard()">Edit Card</button>
+      <button class="exit" onclick="exitRevision()">Exit Revision</button>
+    </div>
+  </div>
+
+  <script>
+    let flashcards = JSON.parse(localStorage.getItem('flashcards')) || [];
+    let currentRevisionIndex = 0;
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+    let currentAudio = null; // Track the current audio element
+
+    // Load flashcards when the page loads
+    document.addEventListener('DOMContentLoaded', loadFlashcards);
+
+    function loadFlashcards() {
+      const flashcardsContainer = document.getElementById('flashcards');
+      flashcardsContainer.innerHTML = ''; // Clear existing cards
+
+      flashcards.forEach((card, index) => {
+        const cardElement = document.createElement('div');
+        cardElement.className = 'flashcard-container';
+        cardElement.innerHTML = `
+          <div class="flashcard" onclick="flipCard(this)">
+            <div class="front">${card.question}</div>
+            <div class="back">${card.answer}</div>
+          </div>
+          ${card.audio ? `<div class="audio-preview"><audio controls src="${card.audio}"></audio></div>` : ''}
+          <button onclick="editFlashcard(${index})">Edit</button>
+          <button onclick="deleteFlashcard(${index})">Delete</button>
+        `;
+        flashcardsContainer.appendChild(cardElement);
+      });
+    }
+
+    function addFlashcard() {
+      const question = document.getElementById('question').value.trim();
+      const answer = document.getElementById('answer').value.trim();
+      const audioPreview = document.getElementById('audio-preview');
+
+      if (question && answer) {
+        const newCard = { question, answer };
+
+        // Stop recording if it's ongoing
+        if (isRecording) {
+          mediaRecorder.stop();
+          isRecording = false;
+          document.getElementById('record-button').textContent = '🎤 Start Recording';
+
+          // Wait for the recording to stop and the audio to be processed
+          mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            newCard.audio = audioUrl; // Associate the audio with the flashcard
+            saveAndClear(newCard);
+          };
+        } else {
+          // If no recording is ongoing, check if there's an existing audio preview
+          if (audioPreview.src) {
+            newCard.audio = audioPreview.src;
+          }
+          saveAndClear(newCard);
+        }
+      } else {
+        alert('Please enter both a word/phrase and its translation.');
+      }
+    }
+
+    function saveAndClear(newCard) {
+      flashcards.push(newCard);
+      localStorage.setItem('flashcards', JSON.stringify(flashcards));
+
+      // Clear input fields
+      document.getElementById('question').value = '';
+      document.getElementById('answer').value = '';
+      document.getElementById('audio-preview').src = '';
+      document.getElementById('audio-preview').style.display = 'none';
+
+      // Reload flashcards
+      loadFlashcards();
+    }
+
+    function toggleRecording() {
+      const recordButton = document.getElementById('record-button');
+      const audioPreview = document.getElementById('audio-preview');
+
+      if (!isRecording) {
+        // Start recording
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(stream => {
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.start();
+            isRecording = true;
+            recordButton.textContent = '⏹ Stop Recording';
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = event => {
+              audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+              const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+              const audioUrl = URL.createObjectURL(audioBlob);
+              audioPreview.src = audioUrl;
+              audioPreview.style.display = 'block';
+            };
+          })
+          .catch(err => {
+            alert('Error accessing microphone: ' + err.message);
+          });
+      } else {
+        // Stop recording
+        mediaRecorder.stop();
+        isRecording = false;
+        recordButton.textContent = '🎤 Start Recording';
+      }
+    }
+
+    function deleteFlashcard(index) {
+      flashcards.splice(index, 1);
+      localStorage.setItem('flashcards', JSON.stringify(flashcards));
+      loadFlashcards();
+    }
+
+    function editFlashcard(index) {
+      const card = flashcards[index];
+      document.getElementById('question').value = card.question;
+      document.getElementById('answer').value = card.answer;
+      if (card.audio) {
+        document.getElementById('audio-preview').src = card.audio;
+        document.getElementById('audio-preview').style.display = 'block';
+      } else {
+        document.getElementById('audio-preview').src = '';
+        document.getElementById('audio-preview').style.display = 'none';
+      }
+
+      // Remove the old card
+      deleteFlashcard(index);
+    }
+
+    function flipCard(card) {
+      card.classList.toggle('flipped');
+    }
+
+    function startRevision() {
+      if (flashcards.length === 0) {
+        alert('No flashcards to revise!');
+        return;
+      }
+      document.getElementById('revision-page').style.display = 'flex';
+      showNextCard();
+    }
+
+    function showNextCard() {
+      const revisionFlashcard = document.getElementById('revision-flashcard');
+      const revisionAudio = document.getElementById('revision-audio');
+      revisionFlashcard.classList.remove('flipped');
+      revisionFlashcard.querySelector('.front').textContent = flashcards[currentRevisionIndex].question;
+      revisionFlashcard.querySelector('.back').textContent = flashcards[currentRevisionIndex].answer;
+
+      // Stop the current audio if it's playing
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        currentAudio.remove(); // Remove the previous audio element
+      }
+
+      // Add audio if available
+      if (flashcards[currentRevisionIndex].audio) {
+        const audioElement = document.createElement('audio');
+        audioElement.controls = true;
+        audioElement.src = flashcards[currentRevisionIndex].audio;
+        revisionAudio.innerHTML = '';
+        revisionAudio.appendChild(audioElement);
+        currentAudio = audioElement;
+        currentAudio.play(); // Automatically play the audio
+      } else {
+        revisionAudio.innerHTML = '';
+        currentAudio = null;
+      }
+
+      currentRevisionIndex = (currentRevisionIndex + 1) % flashcards.length;
+    }
+
+    function editCurrentCard() {
+      const cardIndex = currentRevisionIndex - 1 < 0 ? flashcards.length - 1 : currentRevisionIndex - 1;
+      const card = flashcards[cardIndex];
+      document.getElementById('question').value = card.question;
+      document.getElementById('answer').value = card.answer;
+      if (card.audio) {
+        document.getElementById('audio-preview').src = card.audio;
+        document.getElementById('audio-preview').style.display = 'block';
+      } else {
+        document.getElementById('audio-preview').src = '';
+        document.getElementById('audio-preview').style.display = 'none';
+      }
+
+      // Remove the old card
+      deleteFlashcard(cardIndex);
+
+      // Exit revision mode
+      exitRevision();
+    }
+
+    function exitRevision() {
+      document.getElementById('revision-page').style.display = 'none';
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        currentAudio.remove(); // Remove the audio element
+        currentAudio = null;
+      }
+    }
+  </script>
+</body>
+</html>
